@@ -33,7 +33,7 @@ class BaseRecorder:
 
 class DefaultMicRecorder(BaseRecorder):
     def __init__(self):
-        super().__init__(source=sr.Microphone(sample_rate=16000), source_name="You")
+        super().__init__(source=sr.Microphone(sample_rate=16000), source_name="Ryan")
         self.adjust_for_noise("Default Mic", "Please make some noise from the Default Mic...")
 
 class DefaultSpeakerRecorder(BaseRecorder):
@@ -55,5 +55,5 @@ class DefaultSpeakerRecorder(BaseRecorder):
                                sample_rate=int(default_speakers["defaultSampleRate"]),
                                chunk_size=pyaudio.get_sample_size(pyaudio.paInt16),
                                channels=default_speakers["maxInputChannels"])
-        super().__init__(source=source, source_name="Speaker")
+        super().__init__(source=source, source_name="Bob")
         self.adjust_for_noise("Default Speaker", "Please make or play some noise from the Default Speaker...")

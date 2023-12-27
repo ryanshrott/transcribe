@@ -15,12 +15,12 @@ PHRASE_TIMEOUT = 3.05
 MAX_PHRASES = 10
 
 class AudioTranscriber:
-    def __init__(self, mic_source, speaker_source, model):
-        self.transcript_data = {"You": [], "Speaker": []}
+    def __init__(self, mic_source, Bob_source, model):
+        self.transcript_data = {"Ryan": [], "Bob": []}
         self.transcript_changed_event = threading.Event()
         self.audio_model = model
         self.audio_sources = {
-            "You": {
+            "Ryan": {
                 "sample_rate": mic_source.SAMPLE_RATE,
                 "sample_width": mic_source.SAMPLE_WIDTH,
                 "channels": mic_source.channels,
@@ -29,14 +29,14 @@ class AudioTranscriber:
                 "new_phrase": True,
                 "process_data_func": self.process_mic_data
             },
-            "Speaker": {
-                "sample_rate": speaker_source.SAMPLE_RATE,
-                "sample_width": speaker_source.SAMPLE_WIDTH,
-                "channels": speaker_source.channels,
+            "Bob": {
+                "sample_rate": Bob_source.SAMPLE_RATE,
+                "sample_width": Bob_source.SAMPLE_WIDTH,
+                "channels": Bob_source.channels,
                 "last_sample": bytes(),
                 "last_spoken": None,
                 "new_phrase": True,
-                "process_data_func": self.process_speaker_data
+                "process_data_func": self.process_Bob_data
             }
         }
 
@@ -57,7 +57,7 @@ class AudioTranscriber:
             finally:
                 os.unlink(path)
 
-            if text != '' and text.lower() != 'you':
+            if text != '' and text.lower() != 'Ryan':
                 self.update_transcript(who_spoke, text, time_spoken)
                 self.transcript_changed_event.set()
 
@@ -73,17 +73,17 @@ class AudioTranscriber:
         source_info["last_spoken"] = time_spoken 
 
     def process_mic_data(self, data, temp_file_name):
-        audio_data = sr.AudioData(data, self.audio_sources["You"]["sample_rate"], self.audio_sources["You"]["sample_width"])
+        audio_data = sr.AudioData(data, self.audio_sources["Ryan"]["sample_rate"], self.audio_sources["Ryan"]["sample_width"])
         wav_data = io.BytesIO(audio_data.get_wav_data())
         with open(temp_file_name, 'w+b') as f:
             f.write(wav_data.read())
 
-    def process_speaker_data(self, data, temp_file_name):
+    def process_Bob_data(self, data, temp_file_name):
         with wave.open(temp_file_name, 'wb') as wf:
-            wf.setnchannels(self.audio_sources["Speaker"]["channels"])
+            wf.setnchannels(self.audio_sources["Bob"]["channels"])
             p = pyaudio.PyAudio()
             wf.setsampwidth(p.get_sample_size(pyaudio.paInt16))
-            wf.setframerate(self.audio_sources["Speaker"]["sample_rate"])
+            wf.setframerate(self.audio_sources["Bob"]["sample_rate"])
             wf.writeframes(data)
 
     def update_transcript(self, who_spoke, text, time_spoken):
@@ -97,19 +97,22 @@ class AudioTranscriber:
         else:
             transcript[0] = (f"{who_spoke}: [{text}]\n\n", time_spoken)
 
-    def get_transcript(self):
+    def get_transcript(self, reverse=True):
         combined_transcript = list(merge(
-            self.transcript_data["You"], self.transcript_data["Speaker"], 
+            self.transcript_data["Ryan"], self.transcript_data["Bob"], 
             key=lambda x: x[1], reverse=True))
         combined_transcript = combined_transcript[:MAX_PHRASES]
-        return "".join([t[0] for t in combined_transcript])
+        combined_transcript = [t[0] for t in combined_transcript]
+        if reverse:
+            combined_transcript = combined_transcript[::-1]  # This reverses the list
+        return "".join(combined_transcript)
     
     def clear_transcript_data(self):
-        self.transcript_data["You"].clear()
-        self.transcript_data["Speaker"].clear()
+        self.transcript_data["Ryan"].clear()
+        self.transcript_data["Bob"].clear()
 
-        self.audio_sources["You"]["last_sample"] = bytes()
-        self.audio_sources["Speaker"]["last_sample"] = bytes()
+        self.audio_sources["Ryan"]["last_sample"] = bytes()
+        self.audio_sources["Bob"]["last_sample"] = bytes()
 
-        self.audio_sources["You"]["new_phrase"] = True
-        self.audio_sources["Speaker"]["new_phrase"] = True
+        self.audio_sources["Ryan"]["new_phrase"] = True
+        self.audio_sources["Bob"]["new_phrase"] = True

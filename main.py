@@ -14,7 +14,7 @@ def write_in_textbox(textbox, text):
     textbox.delete("0.0", "end")
     textbox.insert("0.0", text)
 
-def update_transcript_UI(transcriber, textbox):
+def update_transcript_UI(transcriber: AudioTranscriber, textbox):
     transcript_string = transcriber.get_transcript()
     write_in_textbox(textbox, transcript_string)
     textbox.after(300, update_transcript_UI, transcriber, textbox)
